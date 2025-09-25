@@ -1,0 +1,389 @@
+openapi: 3.0.3
+info:
+  title: LangGraph Agent Orchestrator API
+  description: API for managing AI agent workflows in movie production
+  version: 1.0.0
+  contact:
+    name: Agent Orchestrator Service
+    url: https://agents.ft.tc
+
+servers:
+  - url: https://agents.ft.tc/api/v1
+    description: Production server
+
+paths:
+  /workflows:
+    post:
+      summary: Start new workflow
+      description: Create and start a new movie production workflow
+      operationId: createWorkflow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkflowRequest'
+      responses:
+        '201':
+          description: Workflow created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowResponse'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Workflow already exists for project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      summary: List workflows
+      description: Get list of workflows with optional filtering
+      operationId: listWorkflows
+      parameters:
+        - name: status
+          in: query
+          description: Filter by workflow status
+          schema:
+            type: string
+            enum: [running, paused, completed, failed, cancelled]
+        - name: project_id
+          in: query
+          description: Filter by project ID
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of results
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          description: Number of results to skip
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: List of workflows
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowListResponse'
+
+  /workflows/{workflow_id}:
+    get:
+      summary: Get workflow status
+      description: Retrieve detailed information about a specific workflow
+      operationId: getWorkflow
+      parameters:
+        - name: workflow_id
+          in: path
+          required: true
+          description: Unique workflow identifier
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Workflow details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowResponse'
+        '404':
+          description: Workflow not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Update workflow
+      description: Modify workflow parameters or state
+      operationId: updateWorkflow
+      parameters:
+        - name: workflow_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWorkflowRequest'
+      responses:
+        '200':
+          description: Workflow updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowResponse'
+        '404':
+          description: Workflow not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Cancel workflow
+      description: Cancel a running or paused workflow
+      operationId: cancelWorkflow
+      parameters:
+        - name: workflow_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Workflow cancelled successfully
+        '404':
+          description: Workflow not found
+        '409':
+          description: Workflow cannot be cancelled in current state
+
+  /workflows/{workflow_id}/pause:
+    put:
+      summary: Pause workflow
+      description: Pause a running workflow
+      operationId: pauseWorkflow
+      parameters:
+        - name: workflow_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Workflow paused successfully
+        '404':
+          description: Workflow not found
+        '409':
+          description: Workflow cannot be paused in current state
+
+  /workflows/{workflow_id}/resume:
+    put:
+      summary: Resume workflow
+      description: Resume a paused workflow
+      operationId: resumeWorkflow
+      parameters:
+        - name: workflow_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Workflow resumed successfully
+        '404':
+          description: Workflow not found
+        '409':
+          description: Workflow cannot be resumed in current state
+
+  /workflows/{workflow_id}/decisions:
+    post:
+      summary: Submit user decision
+      description: Provide user input for human-in-the-loop decision points
+      operationId: submitDecision
+      parameters:
+        - name: workflow_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserDecisionRequest'
+      responses:
+        '200':
+          description: Decision submitted successfully
+        '404':
+          description: Workflow or decision point not found
+        '409':
+          description: No pending decision for this workflow
+
+components:
+  schemas:
+    CreateWorkflowRequest:
+      type: object
+      required:
+        - project_id
+        - workflow_type
+      properties:
+        project_id:
+          type: string
+          description: Associated project identifier
+        workflow_type:
+          type: string
+          enum: [movie_creation, episode_production, character_development]
+          description: Type of workflow to create
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 5
+          description: Workflow execution priority
+        custom_parameters:
+          type: object
+          description: Workflow-specific configuration parameters
+
+    UpdateWorkflowRequest:
+      type: object
+      properties:
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Update workflow priority
+        custom_parameters:
+          type: object
+          description: Update workflow configuration
+
+    WorkflowResponse:
+      type: object
+      properties:
+        workflow_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+        workflow_type:
+          type: string
+        current_state:
+          type: string
+        completed_states:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [running, paused, completed, failed, cancelled]
+        progress_percentage:
+          type: number
+          minimum: 0
+          maximum: 100
+        estimated_completion:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        results:
+          type: object
+          description: Intermediate and final workflow results
+        pending_decision:
+          $ref: '#/components/schemas/PendingDecision'
+        error_details:
+          $ref: '#/components/schemas/ErrorDetails'
+
+    WorkflowListResponse:
+      type: object
+      properties:
+        workflows:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowResponse'
+        total_count:
+          type: integer
+        has_more:
+          type: boolean
+
+    UserDecisionRequest:
+      type: object
+      required:
+        - decision_id
+        - choice
+      properties:
+        decision_id:
+          type: string
+          description: Identifier for the decision point
+        choice:
+          type: string
+          description: Selected choice from available options
+        feedback:
+          type: string
+          description: Optional user feedback or comments
+
+    PendingDecision:
+      type: object
+      properties:
+        decision_id:
+          type: string
+        prompt:
+          type: string
+          description: Decision prompt for the user
+        options:
+          type: array
+          items:
+            type: string
+          description: Available choices
+        context:
+          type: object
+          description: Additional context for the decision
+        timeout:
+          type: string
+          format: date-time
+          description: Decision deadline
+
+    ErrorDetails:
+      type: object
+      properties:
+        error_type:
+          type: string
+        error_message:
+          type: string
+        failed_task:
+          type: string
+        retry_count:
+          type: integer
+        next_retry:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code for programmatic handling
+        details:
+          type: object
+          description: Additional error context
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+security:
+  - ApiKeyAuth: []

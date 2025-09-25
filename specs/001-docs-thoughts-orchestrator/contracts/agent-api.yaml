@@ -1,0 +1,399 @@
+openapi: 3.0.3
+info:
+  title: Agent Management API
+  description: API for managing AI agents in the orchestrator
+  version: 1.0.0
+
+servers:
+  - url: https://agents.ft.tc/api/v1
+    description: Production server
+
+paths:
+  /agents:
+    get:
+      summary: List available agents
+      description: Get list of all registered agents with their capabilities
+      operationId: listAgents
+      parameters:
+        - name: agent_type
+          in: query
+          description: Filter by agent category
+          schema:
+            type: string
+            enum: [story, character, visual, production]
+        - name: status
+          in: query
+          description: Filter by agent status
+          schema:
+            type: string
+            enum: [available, busy, maintenance, offline]
+        - name: capability
+          in: query
+          description: Filter by specific capability
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of agents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentListResponse'
+
+    post:
+      summary: Register new agent
+      description: Register a new agent with the orchestrator
+      operationId: registerAgent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterAgentRequest'
+      responses:
+        '201':
+          description: Agent registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+        '400':
+          description: Invalid agent configuration
+        '409':
+          description: Agent already registered
+
+  /agents/{agent_id}:
+    get:
+      summary: Get agent status
+      description: Get detailed information about a specific agent
+      operationId: getAgent
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Agent details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+        '404':
+          description: Agent not found
+
+    put:
+      summary: Update agent
+      description: Update agent configuration or status
+      operationId: updateAgent
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAgentRequest'
+      responses:
+        '200':
+          description: Agent updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+        '404':
+          description: Agent not found
+
+    delete:
+      summary: Deregister agent
+      description: Remove agent from the registry
+      operationId: deregisterAgent
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Agent deregistered successfully
+        '404':
+          description: Agent not found
+        '409':
+          description: Agent has active tasks
+
+  /agents/{agent_id}/health:
+    get:
+      summary: Check agent health
+      description: Perform health check on specific agent
+      operationId: checkAgentHealth
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Agent is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Agent is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /agents/{agent_id}/reset:
+    post:
+      summary: Reset agent state
+      description: Reset agent to clean state, cancelling any running tasks
+      operationId: resetAgent
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Agent reset successfully
+        '404':
+          description: Agent not found
+
+  /agents/{agent_id}/tasks:
+    get:
+      summary: Get agent tasks
+      description: List current and recent tasks for an agent
+      operationId: getAgentTasks
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter tasks by status
+          schema:
+            type: string
+            enum: [pending, running, completed, failed, cancelled]
+        - name: limit
+          in: query
+          description: Maximum number of results
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: List of agent tasks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskListResponse'
+        '404':
+          description: Agent not found
+
+components:
+  schemas:
+    RegisterAgentRequest:
+      type: object
+      required:
+        - agent_id
+        - agent_type
+        - capabilities
+        - endpoint_url
+      properties:
+        agent_id:
+          type: string
+          description: Unique agent identifier
+        agent_type:
+          type: string
+          enum: [story, character, visual, production]
+          description: Agent category
+        capabilities:
+          type: array
+          items:
+            type: string
+          description: List of specific capabilities
+        endpoint_url:
+          type: string
+          format: uri
+          description: Agent service endpoint
+        health_check_url:
+          type: string
+          format: uri
+          description: Health check endpoint
+        resource_requirements:
+          $ref: '#/components/schemas/ResourceRequirements'
+        max_concurrent_tasks:
+          type: integer
+          minimum: 1
+          default: 1
+          description: Maximum parallel task capacity
+        version:
+          type: string
+          description: Agent implementation version
+
+    UpdateAgentRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [available, maintenance, offline]
+          description: Update agent status
+        resource_requirements:
+          $ref: '#/components/schemas/ResourceRequirements'
+        max_concurrent_tasks:
+          type: integer
+          minimum: 1
+        version:
+          type: string
+
+    AgentResponse:
+      type: object
+      properties:
+        agent_id:
+          type: string
+        agent_type:
+          type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [available, busy, maintenance, offline]
+        current_tasks:
+          type: array
+          items:
+            type: string
+          description: Currently executing task IDs
+        success_rate:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Historical success percentage
+        average_execution_time:
+          type: number
+          description: Average task completion time in seconds
+        last_heartbeat:
+          type: string
+          format: date-time
+          description: Last health check timestamp
+        resource_requirements:
+          $ref: '#/components/schemas/ResourceRequirements'
+        max_concurrent_tasks:
+          type: integer
+        version:
+          type: string
+        endpoint_url:
+          type: string
+          format: uri
+        health_check_url:
+          type: string
+          format: uri
+
+    AgentListResponse:
+      type: object
+      properties:
+        agents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentResponse'
+        total_count:
+          type: integer
+
+    ResourceRequirements:
+      type: object
+      properties:
+        cpu_cores:
+          type: number
+          minimum: 0.1
+          description: Required CPU cores
+        memory_gb:
+          type: number
+          minimum: 0.1
+          description: Required memory in GB
+        gpu_memory_gb:
+          type: number
+          minimum: 0
+          description: Required GPU memory in GB
+        storage_gb:
+          type: number
+          minimum: 0
+          description: Required storage in GB
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy, unknown]
+        last_check:
+          type: string
+          format: date-time
+        response_time:
+          type: number
+          description: Health check response time in milliseconds
+        error_message:
+          type: string
+          description: Error message if unhealthy
+        details:
+          type: object
+          description: Additional health information
+
+    TaskListResponse:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskSummary'
+        total_count:
+          type: integer
+
+    TaskSummary:
+      type: object
+      properties:
+        task_id:
+          type: string
+        workflow_id:
+          type: string
+        task_type:
+          type: string
+        status:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        execution_time:
+          type: number
+          description: Task execution time in seconds
+        quality_score:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Result quality assessment
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+security:
+  - ApiKeyAuth: []

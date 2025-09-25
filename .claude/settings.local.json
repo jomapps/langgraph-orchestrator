@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.specify/scripts/powershell/create-new-feature.ps1 -Json \"@docs\\thoughts\\orchestrator-implementation-plan.md has my plan of what i am doing.\")",
+      "Bash(.specify/scripts/powershell/setup-plan.ps1 -Json)",
+      "Bash(.specify/scripts/powershell/update-agent-context.ps1 -AgentType claude)",
+      "Bash(.specify/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks)",
+      "Bash(.specify/scripts/powershell/check-prerequisites.ps1 -Json)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

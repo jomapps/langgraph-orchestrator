@@ -1,50 +1,64 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report:
+Version change: 1.0.0 (initial constitution)
+Modified principles: None (initial creation)
+Added sections: Core Principles (5), Performance Standards, Service Integration, Governance
+Removed sections: None (from template)
+Templates requiring updates: All templates reference constitution checks - validated
+Follow-up TODOs: None
+-->
+
+# LangGraph Agent Orchestrator Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Library-First Architecture
+Every core capability MUST be implemented as a standalone, reusable library before integration. Libraries MUST be self-contained, independently testable, and documented with clear purpose. Orchestration logic, state management, and agent communication patterns are implemented as modular libraries under `src/lib/` and `src/services/`. No organizational-only libraries without functional purpose are permitted.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Test-First Development (NON-NEGOTIABLE)
+TDD is mandatory: Contract tests written → Integration tests written → Tests MUST fail → Then implement. Red-Green-Refactor cycle is strictly enforced. All API endpoints require contract tests before implementation. All workflow scenarios require integration tests before orchestration logic. Test coverage MUST exceed 90% for core orchestration components.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Service Boundary Isolation
+Clean separation MUST be maintained between orchestrator, agents, and external services. All inter-service communication occurs through well-defined contracts (OpenAPI specs). Direct service-to-service coupling is forbidden - all communication flows through the orchestrator hub. External service integrations MUST implement circuit breaker patterns for fault tolerance.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Observability and Monitoring
+Structured JSON logging is required for all components. Every workflow execution MUST have correlation IDs for distributed tracing. Real-time metrics collection is mandatory for workflow progress, agent performance, and system health. Performance targets (100+ concurrent workflows, <2hr production time, 99.9% completion rate) MUST be continuously monitored and validated.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. State Management Consistency
+Workflow state MUST persist across service restarts using Redis with structured schemas. State transitions MUST be atomic and logged to Redis Streams for auditability. Concurrent workflow execution MUST NOT interfere with each other's state. All state mutations MUST be validated against defined state machine rules before persistence.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Performance Standards
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+All implementations MUST meet these non-negotiable performance requirements:
+- Support 100+ concurrent movie production workflows
+- Process 1000+ agent task executions per minute  
+- Respond to workflow status queries in <1 second
+- Complete full movie production in <2 hours
+- Maintain 99.9% workflow completion rate
+- Provide real-time progress updates with <5 second latency
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Performance regression testing is required for all core path changes.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Service Integration Requirements
+
+External service integration MUST follow these patterns:
+- Auto-Movie App: REST API with retry logic and timeout handling
+- Brain Service: WebSocket MCP protocol with connection pooling
+- Task Service: HTTP with async polling and circuit breakers
+- All external calls MUST implement exponential backoff with jitter
+- Service health checks MUST be automated and continuous
+- Failed service calls MUST degrade gracefully without blocking workflows
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution supersedes all other development practices and coding standards. All pull requests MUST include constitutional compliance verification in the review checklist. Architectural decisions that violate principles MUST be documented in the Complexity Tracking section with explicit justification for why simpler alternatives are insufficient.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+Constitution amendments require:
+1. Documentation of rationale and impact analysis
+2. Approval from system architects
+3. Migration plan for existing code
+4. Update to all dependent templates and documentation
+
+All constitution checks in planning documents MUST validate against current version. Use CLAUDE.md and other agent guidance files for runtime development guidance.
+
+**Version**: 1.0.0 | **Ratified**: 2025-09-25 | **Last Amended**: 2025-09-25
