@@ -1,0 +1,109 @@
+groups:
+  - name: system.rules
+    rules:
+      # Service availability
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "Service {{ $labels.instance }} is down"
+          description: "Service {{ $labels.instance }} has been down for more than 1 minute"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/service-down"
+
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 80% for more than 5 minutes"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/high-cpu"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes / 1024 / 1024 > 1024
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 1GB for more than 5 minutes"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/high-memory"
+
+      # Disk space usage
+      - alert: HighDiskUsage
+        expr: (node_filesystem_size_bytes - node_filesystem_avail_bytes) / node_filesystem_size_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High disk usage on {{ $labels.instance }}"
+          description: "Disk usage is above 90% for more than 5 minutes"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/high-disk-usage"
+
+      # System load
+      - alert: HighSystemLoad
+        expr: node_load1 > 4
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High system load on {{ $labels.instance }}"
+          description: "System load is above 4 for more than 5 minutes"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/high-load"
+
+      # Network connectivity
+      - alert: NetworkReceiveErrors
+        expr: rate(node_network_receive_errs_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "Network receive errors on {{ $labels.instance }}"
+          description: "Network receive errors detected for more than 5 minutes"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/network-errors"
+
+      - alert: NetworkTransmitErrors
+        expr: rate(node_network_transmit_errs_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "Network transmit errors on {{ $labels.instance }}"
+          description: "Network transmit errors detected for more than 5 minutes"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/network-errors"
+
+      # File descriptor usage
+      - alert: HighFileDescriptorUsage
+        expr: process_open_fds / process_max_fds > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High file descriptor usage on {{ $labels.instance }}"
+          description: "File descriptor usage is above 80% for more than 5 minutes"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/high-fd-usage"
+
+      # Process restart
+      - alert: ProcessRestart
+        expr: increase(process_start_time_seconds[1h]) > 0
+        for: 0m
+        labels:
+          severity: info
+          service: system
+        annotations:
+          summary: "Process restarted on {{ $labels.instance }}"
+          description: "Process has been restarted in the last hour"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/process-restart"

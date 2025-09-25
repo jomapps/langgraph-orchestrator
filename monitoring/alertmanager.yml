@@ -1,0 +1,171 @@
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@langgraph-orchestrator.com'
+  smtp_auth_username: 'alerts@langgraph-orchestrator.com'
+  smtp_auth_password: 'your-smtp-password'
+
+# Route tree
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  receiver: 'default'
+  routes:
+    # Critical alerts
+    - match:
+        severity: critical
+      receiver: 'critical'
+      continue: true
+      group_wait: 5s
+      repeat_interval: 5m
+    
+    # Warning alerts
+    - match:
+        severity: warning
+      receiver: 'warning'
+      continue: true
+      group_wait: 30s
+      repeat_interval: 1h
+    
+    # Application-specific alerts
+    - match:
+        service: langgraph-app
+      receiver: 'app-team'
+      continue: true
+    
+    # Redis-specific alerts
+    - match:
+        service: redis
+      receiver: 'infra-team'
+      continue: true
+    
+    # System alerts
+    - match:
+        service: node
+      receiver: 'ops-team'
+      continue: true
+
+# Receivers
+receivers:
+  - name: 'default'
+    email_configs:
+      - to: 'team@langgraph-orchestrator.com'
+        subject: '[LangGraph] Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Labels: {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
+          {{ end }}
+
+  - name: 'critical'
+    email_configs:
+      - to: 'oncall@langgraph-orchestrator.com'
+        subject: '[CRITICAL] LangGraph Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          CRITICAL ALERT - Immediate attention required!
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Labels: {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
+          {{ end }}
+        
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#critical-alerts'
+        title: 'CRITICAL: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          {{ .Annotations.summary }}
+          {{ .Annotations.description }}
+          {{ end }}
+        color: 'danger'
+        send_resolved: true
+
+  - name: 'warning'
+    email_configs:
+      - to: 'team@langgraph-orchestrator.com'
+        subject: '[WARNING] LangGraph Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          Warning alert - Please review when convenient.
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Labels: {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
+          {{ end }}
+        
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts'
+        title: 'Warning: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          {{ .Annotations.summary }}
+          {{ .Annotations.description }}
+          {{ end }}
+        color: 'warning'
+        send_resolved: true
+
+  - name: 'app-team'
+    email_configs:
+      - to: 'app-team@langgraph-orchestrator.com'
+        subject: '[LangGraph App] {{ .GroupLabels.alertname }}'
+        body: |
+          Application alert for LangGraph orchestrator.
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Labels: {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
+          {{ end }}
+
+  - name: 'infra-team'
+    email_configs:
+      - to: 'infra-team@langgraph-orchestrator.com'
+        subject: '[Infrastructure] {{ .GroupLabels.alertname }}'
+        body: |
+          Infrastructure alert for Redis/database.
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Labels: {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
+          {{ end }}
+
+  - name: 'ops-team'
+    email_configs:
+      - to: 'ops-team@langgraph-orchestrator.com'
+        subject: '[System] {{ .GroupLabels.alertname }}'
+        body: |
+          System-level alert for infrastructure.
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Labels: {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
+          {{ end }}
+
+# Inhibition rules
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'dev', 'instance']
+
+# Time intervals for maintenance windows
+time_intervals:
+  - name: maintenance_window
+    time_intervals:
+      - times:
+          - start_time: '02:00'
+            end_time: '04:00'
+        weekdays: ['saturday', 'sunday']
+
+# Templates
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'

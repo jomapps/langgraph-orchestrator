@@ -1,0 +1,136 @@
+# Production deployment configuration
+version: '3.8'
+
+services:
+  # Redis cluster for high availability
+  redis-master:
+    image: redis:7.0-alpine
+    container_name: langgraph-redis-master
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_master_data:/data
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - langgraph-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+  # Application with load balancing
+  app:
+    build: .
+    container_name: langgraph-app
+    ports:
+      - "8000"
+    environment:
+      - REDIS_HOST=redis-master
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - LOG_LEVEL=INFO
+      - WORKER_PROCESSES=8
+      - MAX_WORKFLOWS=1000
+      - MAX_AGENTS=200
+    depends_on:
+      redis-master:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - langgraph-network
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+  # Load balancer
+  nginx:
+    image: nginx:alpine
+    container_name: langgraph-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - app
+    networks:
+      - langgraph-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  # Monitoring stack
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: langgraph-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    networks:
+      - langgraph-network
+    deploy:
+      replicas: 1
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: langgraph-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - langgraph-network
+    deploy:
+      replicas: 1
+
+volumes:
+  redis_master_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  langgraph-network:
+    driver: overlay
+    attachable: true

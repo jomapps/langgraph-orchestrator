@@ -1,0 +1,162 @@
+groups:
+  - name: application.rules
+    rules:
+      # HTTP request metrics
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status_code=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          service: langgraph-app
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 10% for more than 2 minutes"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/high-error-rate"
+
+      - alert: SlowResponseTimes
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: langgraph-app
+        annotations:
+          summary: "Slow response times detected"
+          description: "95th percentile response time is above 2 seconds"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/slow-response"
+
+      - alert: HighRequestRate
+        expr: rate(http_requests_total[5m]) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: langgraph-app
+        annotations:
+          summary: "High request rate detected"
+          description: "Request rate is above 1000 requests per second"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/high-request-rate"
+
+      # Workflow metrics
+      - alert: WorkflowFailures
+        expr: rate(workflow_completed_total{status="failed"}[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          service: langgraph-app
+        annotations:
+          summary: "High workflow failure rate"
+          description: "Workflow failure rate is above 5% for more than 3 minutes"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/workflow-failures"
+
+      - alert: WorkflowStuck
+        expr: workflows_active > 100
+        for: 10m
+        labels:
+          severity: warning
+          service: langgraph-app
+        annotations:
+          summary: "High number of active workflows"
+          description: "More than 100 workflows have been active for more than 10 minutes"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/workflow-stuck"
+
+      - alert: LongWorkflowDuration
+        expr: histogram_quantile(0.95, rate(workflow_duration_seconds_bucket[5m])) > 1800
+        for: 5m
+        labels:
+          severity: warning
+          service: langgraph-app
+        annotations:
+          summary: "Long workflow execution times"
+          description: "95th percentile workflow duration is above 30 minutes"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/long-workflows"
+
+      # Agent metrics
+      - alert: AgentHealthIssues
+        expr: agent_health_status != 1
+        for: 2m
+        labels:
+          severity: warning
+          service: langgraph-app
+        annotations:
+          summary: "Agent health issues detected"
+          description: "Agent {{ $labels.agent_id }} is reporting health issues"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/agent-health"
+
+      - alert: HighAgentTaskFailures
+        expr: rate(agent_tasks_completed_total{status="failed"}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: langgraph-app
+        annotations:
+          summary: "High agent task failure rate"
+          description: "Agent task failure rate is above 10% for more than 5 minutes"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/agent-task-failures"
+
+      - alert: SlowAgentTasks
+        expr: histogram_quantile(0.95, rate(agent_task_duration_seconds_bucket[5m])) > 300
+        for: 5m
+        labels:
+          severity: warning
+          service: langgraph-app
+        annotations:
+          summary: "Slow agent task execution"
+          description: "95th percentile agent task duration is above 5 minutes"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/slow-agent-tasks"
+
+      # Task metrics
+      - alert: TaskQueueBacklog
+        expr: tasks_active > 500
+        for: 10m
+        labels:
+          severity: warning
+          service: langgraph-app
+        annotations:
+          summary: "High task queue backlog"
+          description: "More than 500 tasks are active for more than 10 minutes"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/task-backlog"
+
+      - alert: HighTaskRetries
+        expr: rate(task_retries_total[5m]) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          service: langgraph-app
+        annotations:
+          summary: "High task retry rate"
+          description: "Task retry rate is above 20% for more than 5 minutes"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/high-retries"
+
+      # Application health
+      - alert: ApplicationHealthCheckFailed
+        expr: up{job="langgraph-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: langgraph-app
+        annotations:
+          summary: "Application health check failed"
+          description: "Application health check has been failing for more than 1 minute"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/app-health-failed"
+
+      # Memory and performance
+      - alert: HighGCTime
+        expr: rate(python_gc_collections_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: langgraph-app
+        annotations:
+          summary: "High garbage collection activity"
+          description: "Python garbage collection is running more than 10 times per second"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/high-gc"
+
+      - alert: PythonMemoryLeak
+        expr: increase(process_resident_memory_bytes[1h]) > 100000000
+        for: 30m
+        labels:
+          severity: warning
+          service: langgraph-app
+        annotations:
+          summary: "Potential memory leak detected"
+          description: "Memory usage has increased by more than 100MB in the last hour"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/memory-leak"

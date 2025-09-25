@@ -5,7 +5,11 @@
       "Bash(.specify/scripts/powershell/setup-plan.ps1 -Json)",
       "Bash(.specify/scripts/powershell/update-agent-context.ps1 -AgentType claude)",
       "Bash(.specify/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks)",
-      "Bash(.specify/scripts/powershell/check-prerequisites.ps1 -Json)"
+      "Bash(.specify/scripts/powershell/check-prerequisites.ps1 -Json)",
+      "Bash(python -m pytest tests/ -v --tb=short)",
+      "Bash(python -m pytest tests/unit/ -v --tb=short)",
+      "Bash(pip install:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

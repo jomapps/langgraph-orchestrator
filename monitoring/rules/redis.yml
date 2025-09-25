@@ -1,0 +1,175 @@
+groups:
+  - name: redis.rules
+    rules:
+      # Redis connection metrics
+      - alert: RedisConnectionIssues
+        expr: redis_connected_clients < 1
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis connection issues"
+          description: "No active Redis connections detected"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/redis-connection"
+
+      - alert: RedisHighConnectionCount
+        expr: redis_connected_clients > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "High Redis connection count"
+          description: "Redis has more than 1000 connected clients"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/redis-high-connections"
+
+      - alert: RedisBlockedClients
+        expr: redis_blocked_clients > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis blocked clients detected"
+          description: "Redis has {{ $value }} blocked clients"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/redis-blocked-clients"
+
+      # Redis memory metrics
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "High Redis memory usage"
+          description: "Redis memory usage is above 90%"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/redis-high-memory"
+
+      - alert: RedisMemoryFragmentation
+        expr: redis_memory_fragmentation_ratio > 1.5
+        for: 10m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis memory fragmentation detected"
+          description: "Redis memory fragmentation ratio is above 1.5"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/redis-fragmentation"
+
+      # Redis performance metrics
+      - alert: RedisSlowQueries
+        expr: increase(redis_slowlog_length[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis slow queries detected"
+          description: "Redis has logged {{ $value }} slow queries in the last 5 minutes"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/redis-slow-queries"
+
+      - alert: RedisHighCommandRate
+        expr: rate(redis_commands_processed_total[5m]) > 10000
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "High Redis command rate"
+          description: "Redis command rate is above 10,000 commands per second"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/redis-high-commands"
+
+      # Redis cache metrics
+      - alert: RedisLowHitRate
+        expr: redis_keyspace_hits_total / (redis_keyspace_hits_total + redis_keyspace_misses_total) < 0.8
+        for: 10m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Low Redis cache hit rate"
+          description: "Redis cache hit rate is below 80%"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/redis-low-hit-rate"
+
+      - alert: RedisHighEvictionRate
+        expr: rate(redis_evicted_keys_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "High Redis eviction rate"
+          description: "Redis is evicting more than 100 keys per second"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/redis-high-eviction"
+
+      # Redis persistence metrics
+      - alert: RedisPersistenceFailures
+        expr: increase(redis_rdb_changes_since_last_save[1h]) > 10000
+        for: 30m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis persistence issues"
+          description: "Redis has {{ $value }} changes since last save"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/redis-persistence"
+
+      - alert: RedisAOFReloadFailures
+        expr: redis_aof_last_bgrewrite_status != 1
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis AOF reload failures"
+          description: "Redis AOF last background rewrite failed"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/redis-aof-failures"
+
+      # Redis replication metrics (if applicable)
+      - alert: RedisReplicationLag
+        expr: redis_master_last_io_seconds_ago > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis replication lag detected"
+          description: "Redis replication lag is above 10 seconds"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/redis-replication-lag"
+
+      - alert: RedisDisconnectedSlaves
+        expr: redis_connected_slaves < redis_config_maxclients * 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis disconnected slaves"
+          description: "Redis has disconnected slave instances"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/redis-slaves"
+
+      # Redis health check
+      - alert: RedisHealthCheckFailed
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis health check failed"
+          description: "Redis health check has been failing for more than 1 minute"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/redis-health-failed"
+
+      # Redis configuration issues
+      - alert: RedisConfigIssues
+        expr: redis_config_maxmemory > 0 and redis_memory_used_bytes > redis_config_maxmemory * 0.95
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis configuration issues"
+          description: "Redis memory usage is approaching maxmemory limit"
+          runbook_url: "https://github.com/langgraph-orchestrator/runbooks/redis-config-issues"
