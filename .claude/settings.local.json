@@ -11,7 +11,8 @@
       "Bash(pip install:*)",
       "Bash(python:*)",
       "Bash(chmod:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "mcp__byterover-mcp__byterover-retrieve-knowledge"
     ],
     "deny": [],
     "ask": []
