@@ -4,11 +4,11 @@
 
 The LangGraph Orchestrator is a comprehensive workflow management system designed for video creation and content optimization. It provides a RESTful API for managing workflows, agents, projects, and tasks with real-time orchestration capabilities.
 
-## Base URL
+## Base URLs
 
-```
-http://localhost:8000
-```
+**Production**: `https://agents.ft.tc`  
+**Local Development**: `http://localhost:8000`  
+**API Documentation**: `https://agents.ft.tc/api/docs`
 
 ## Authentication
 
@@ -47,39 +47,31 @@ Check the health status of the API server and its dependencies.
 
 ### Workflow Management
 
-#### GET /workflows
+#### GET /api/v1/workflows
 
 Retrieve all workflows with optional filtering.
 
 **Query Parameters:**
-- `status` (optional): Filter by workflow status (`pending`, `running`, `paused`, `completed`, `failed`)
+- `status` (optional): Filter by workflow status (`running`, `paused`, `completed`, `failed`, `cancelled`)
 - `project_id` (optional): Filter by project ID
-- `limit` (optional): Maximum number of results (default: 100, max: 1000)
-- `offset` (optional): Number of results to skip (default: 0)
+- `limit` (optional): Maximum number of results (default: 100)
 
 **Response:**
 ```json
-{
-  "workflows": [
-    {
-      "id": "workflow-123",
-      "project_id": "project-456",
-      "type": "video_creation",
-      "status": "running",
-      "title": "Product Demo Video",
-      "description": "Create a promotional video for new product launch",
-      "genre": "promotional",
-      "duration": 120,
-      "progress": 65.5,
-      "created_at": "2024-01-01T10:00:00Z",
-      "updated_at": "2024-01-01T11:30:00Z",
-      "assigned_agents": ["agent-1", "agent-2"]
-    }
-  ],
-  "total": 1,
-  "limit": 100,
-  "offset": 0
-}
+[
+  {
+    "id": "f156b7e6-770e-4484-a7bc-dbccbac0a252",
+    "project_id": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "movie_creation",
+    "status": "running",
+    "state": "concept_development",
+    "progress": 0.0,
+    "title": "Epic Adventure Movie",
+    "description": "",
+    "created_at": "2025-09-25T23:58:34.355415",
+    "updated_at": "2025-09-25T23:58:34.355415"
+  }
+]
 ```
 
 #### GET /workflows/{workflow_id}
@@ -255,44 +247,39 @@ Cancel a workflow execution.
 
 ### Agent Management
 
-#### GET /agents
+#### GET /api/v1/agents
 
 Retrieve all agents with optional filtering.
 
 **Query Parameters:**
-- `status` (optional): Filter by agent status (`available`, `busy`, `offline`)
-- `category` (optional): Filter by agent category
-- `capability` (optional): Filter by capability
+- `status` (optional): Filter by agent status (`idle`, `busy`, `unavailable`, `error`)
+- `category` (optional): Filter by agent category (`creative`, `analytical`, `technical`, `coordination`, `research`, `content`)
 - `limit` (optional): Maximum number of results (default: 100)
-- `offset` (optional): Number of results to skip (default: 0)
 
 **Response:**
 ```json
-{
-  "agents": [
-    {
-      "id": "agent-1",
-      "name": "Script Writer",
-      "category": "content_creation",
-      "status": "available",
-      "capabilities": ["script_writing", "content_generation"],
-      "specializations": ["promotional_videos", "educational_content"],
-      "version": "1.0.0",
-      "description": "AI agent specialized in writing video scripts",
-      "performance_metrics": {
-        "tasks_completed": 150,
-        "average_completion_time": 1800,
-        "success_rate": 0.95
-      },
-      "health_status": "healthy",
-      "created_at": "2024-01-01T08:00:00Z",
-      "last_active": "2024-01-01T12:00:00Z"
-    }
-  ],
-  "total": 1,
-  "limit": 100,
-  "offset": 0
-}
+[
+  {
+    "id": "test-agent-3c9a38a0-2143-46de-850f-410c0a5820e5",
+    "name": "Story Creation Agent",
+    "category": "creative",
+    "status": "idle",
+    "capabilities": [
+      "story_creation",
+      "character_development"
+    ],
+    "specializations": [],
+    "version": "1.0.0",
+    "description": "",
+    "performance_score": 0.0,
+    "reliability_score": 0.0,
+    "max_concurrent_tasks": 1,
+    "current_task_count": 0,
+    "health_status": {},
+    "created_at": "2025-09-25T23:59:19.788949",
+    "updated_at": "2025-09-25T23:59:19.788949"
+  }
+]
 ```
 
 #### GET /agents/{agent_id}
