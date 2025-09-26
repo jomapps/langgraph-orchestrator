@@ -12,7 +12,8 @@
       "Bash(python:*)",
       "Bash(chmod:*)",
       "Bash(timeout:*)",
-      "mcp__byterover-mcp__byterover-retrieve-knowledge"
+      "mcp__byterover-mcp__byterover-retrieve-knowledge",
+      "WebFetch(domain:agents.ft.tc)"
     ],
     "deny": [],
     "ask": []

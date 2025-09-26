@@ -93,7 +93,7 @@ async def list_workflows(
 ):
     """List workflows with optional filtering."""
     try:
-        workflows = await state_manager.get_workflows(
+        workflows = await state_manager.list_workflows(
             project_id=project_id,
             status=status,
             limit=limit,
@@ -325,7 +325,7 @@ async def list_agents(
 ):
     """List registered agents."""
     try:
-        agents = await state_manager.get_agents(
+        agents = await state_manager.list_agents(
             category=category,
             status=status,
             limit=limit,
@@ -493,7 +493,7 @@ async def get_agent_tasks(
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
         
-        tasks = await state_manager.get_tasks_by_agent(
+        tasks = await state_manager.list_tasks(
             agent_id=agent_id,
             status=status,
             limit=limit,
