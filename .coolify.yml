@@ -1,0 +1,59 @@
+# Coolify Configuration for LangGraph Orchestrator
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: langgraph-orchestrator
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - LOG_LEVEL=WARNING
+      - MAX_WORKFLOWS=500
+      - MAX_AGENTS=100
+      - SECRET_KEY=${SECRET_KEY}
+      - API_KEY=${API_KEY}
+      - AUTO_MOVIE_BASE_URL=https://auto-movie.ft.tc
+      - BRAIN_SERVICE_BASE_URL=https://brain.ft.tc
+      - TASK_SERVICE_BASE_URL=https://tasks.ft.tc
+    depends_on:
+      - redis
+    volumes:
+      - app_logs:/app/logs
+      - app_data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: langgraph-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  app_logs:
+  app_data:

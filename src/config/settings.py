@@ -66,6 +66,13 @@ class Settings(BaseSettings):
     environment: str = "development"
     debug: bool = True
     
+    @property
+    def redis_url(self) -> str:
+        """Build Redis URL from configuration."""
+        if self.redis.password:
+            return f"redis://:{self.redis.password}@{self.redis.host}:{self.redis.port}/{self.redis.db}"
+        return f"redis://{self.redis.host}:{self.redis.port}/{self.redis.db}"
+    
     # Redis Configuration
     redis: RedisSettings = RedisSettings()
     

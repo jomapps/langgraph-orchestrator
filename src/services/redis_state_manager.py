@@ -18,6 +18,13 @@ class RedisStateManager:
         self.redis_client: Optional[redis.Redis] = None
         self.is_connected = False
     
+    @classmethod
+    async def create(cls) -> 'RedisStateManager':
+        """Create and initialize RedisStateManager"""
+        manager = cls()
+        await manager.connect()
+        return manager
+    
     async def connect(self) -> None:
         """Connect to Redis."""
         try:

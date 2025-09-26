@@ -1,0 +1,29 @@
+{
+  "project_id": "550e8400-e29b-41d4-a716-446655440000",
+  "user_id": "test-user-001",
+  "title": "Epic Adventure Movie",
+  "description": "A thrilling adventure movie about heroes saving the world",
+  "genre": "action",
+  "target_duration": 120,
+  "style_preferences": {
+    "visual_style": "cinematic",
+    "tone": "epic",
+    "pacing": "fast"
+  },
+  "characters": [
+    {
+      "name": "Hero",
+      "type": "protagonist",
+      "description": "Brave warrior with magical powers"
+    }
+  ],
+  "settings": [
+    {
+      "name": "Ancient Temple",
+      "description": "Mysterious temple with magical artifacts"
+    }
+  ],
+  "themes": ["heroism", "adventure", "magic"],
+  "content_rating": "PG-13",
+  "deadline": "2024-12-31T23:59:59Z"
+}
