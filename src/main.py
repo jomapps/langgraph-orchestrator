@@ -96,21 +96,21 @@ async def list_workflows(
         workflows = await state_manager.list_workflows(
             project_id=project_id,
             status=status,
-            limit=limit,
-            offset=offset
+            limit=limit
         )
         
         return [
             {
-                "id": w.id,
+                "id": w.workflow_id,
                 "project_id": w.project_id,
-                "type": w.type.value,
-                "status": w.status.value,
-                "state": w.state.value,
-                "progress": w.progress,
+                "type": w.workflow_type.value if hasattr(w.workflow_type, 'value') else str(w.workflow_type),
+                "status": w.status.value if hasattr(w.status, 'value') else str(w.status),
+                "state": w.current_state.value if hasattr(w.current_state, 'value') else str(w.current_state),
+                "progress": w.progress_percentage,
+                "title": w.title,
+                "description": w.description,
                 "created_at": w.created_at.isoformat(),
-                "updated_at": w.updated_at.isoformat(),
-                "metadata": w.metadata
+                "updated_at": w.updated_at.isoformat()
             }
             for w in workflows
         ]
@@ -328,21 +328,23 @@ async def list_agents(
         agents = await state_manager.list_agents(
             category=category,
             status=status,
-            limit=limit,
-            offset=offset
+            limit=limit
         )
         
         return [
             {
-                "id": a.id,
+                "id": a.agent_id,
                 "name": a.name,
-                "category": a.category.value,
-                "status": a.status.value,
+                "category": a.category.value if hasattr(a.category, 'value') else str(a.category),
+                "status": a.status.value if hasattr(a.status, 'value') else str(a.status),
                 "capabilities": a.capabilities,
                 "specializations": a.specializations,
                 "version": a.version,
                 "description": a.description,
-                "performance_metrics": a.performance_metrics,
+                "performance_score": a.performance_score,
+                "reliability_score": a.reliability_score,
+                "max_concurrent_tasks": a.max_concurrent_tasks,
+                "current_task_count": a.current_task_count,
                 "health_status": a.health_status,
                 "created_at": a.created_at.isoformat(),
                 "updated_at": a.updated_at.isoformat()

@@ -13,7 +13,10 @@
       "Bash(chmod:*)",
       "Bash(timeout:*)",
       "mcp__byterover-mcp__byterover-retrieve-knowledge",
-      "WebFetch(domain:agents.ft.tc)"
+      "WebFetch(domain:agents.ft.tc)",
+      "Bash(uvicorn:*)",
+      "Bash(curl:*)",
+      "mcp__byterover-mcp__byterover-store-knowledge"
     ],
     "deny": [],
     "ask": []
