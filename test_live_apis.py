@@ -45,7 +45,7 @@ async def setup_test_project():
 
 async def test_workflow_operations():
     """Test workflow API operations"""
-    base_url = "http://127.0.0.1:8000"
+    base_url = "http://127.0.0.1:8003"
     
     # Setup test project first
     project_id = await setup_test_project()
@@ -113,7 +113,7 @@ async def test_workflow_operations():
 
 async def test_agent_operations():
     """Test agent API operations"""
-    base_url = "http://127.0.0.1:8000"
+    base_url = "http://127.0.0.1:8003"
     
     async with httpx.AsyncClient(timeout=30.0) as client:
         print("\\n=== Testing Agent Operations ===")
@@ -208,14 +208,14 @@ async def test_redis_data_persistence():
 async def run_all_tests():
     """Run comprehensive live API tests"""
     print("Starting Live API Tests")
-    print(f"Server: http://127.0.0.1:8000")
+    print(f"Server: http://127.0.0.1:8003")
     print(f"Redis: {settings.redis_url}")
     print("=" * 50)
     
     try:
         # Test health first
         async with httpx.AsyncClient() as client:
-            health_response = await client.get("http://127.0.0.1:8000/health")
+            health_response = await client.get("http://127.0.0.1:8003/health")
             if health_response.status_code != 200:
                 print("ERROR: Server not healthy!")
                 return

@@ -51,6 +51,11 @@ AUTO_MOVIE_BASE_URL=https://auto-movie.ft.tc
 BRAIN_SERVICE_BASE_URL=https://brain.ft.tc
 TASK_SERVICE_BASE_URL=https://tasks.ft.tc
 
+# Neo4j Database Connection
+NEO4J_URI=https://neo4j.ft.tc
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=your-neo4j-password
+
 # Monitoring
 LOG_FORMAT=json
 ENABLE_STRUCTURED_LOGGING=true

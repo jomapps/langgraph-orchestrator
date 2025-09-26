@@ -95,6 +95,13 @@ TASK_SERVICE_BASE_URL=https://tasks.ft.tc
 SERVICE_TIMEOUT_SECONDS=60
 ```
 
+#### **Neo4j Database Connection**
+```env
+NEO4J_URI=https://neo4j.ft.tc
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=your-neo4j-password
+```
+
 #### **Monitoring & Logging**
 ```env
 LOG_FORMAT=json
@@ -353,4 +360,24 @@ git push origin main
 
 **🎉 Your LangGraph Orchestrator is now live on Coolify!**
 
-Visit: `https://orchestrator.yourdomain.com/api/docs` to start using the API.
+Visit: `https://agents.ft.tc/api/docs` to start using the API.
+
+## 🏗️ **Integration with AI Movie Platform**
+
+This LangGraph Orchestrator is **Service #7** in the larger AI Movie Platform:
+- **Domain**: `agents.ft.tc` (Production) / `agents.ngrok.pro` (Dev)  
+- **Port**: `8003` (per Domain-configs.md)
+- **Purpose**: Coordinates 50+ AI agents for movie production workflows
+
+### **Connected Services:**
+- ✅ **Auto-Movie App**: `https://auto-movie.ft.tc` - Main dashboard
+- ✅ **Task Service**: `https://tasks.ft.tc` - GPU processing  
+- ✅ **Brain Service**: `https://brain.ft.tc` - Jina v4 embeddings + Neo4j
+- ✅ **Neo4j**: `https://neo4j.ft.tc` - Knowledge graph
+- ✅ **Redis**: Internal caching and state management
+
+### **Service Discovery:**
+The orchestrator automatically discovers and integrates with:
+1. **Brain Service** (MCP protocol) - Knowledge consistency and semantic search
+2. **Task Service** (REST API) - Heavy AI processing tasks  
+3. **Auto-Movie** (REST API) - Project management and UI updates
