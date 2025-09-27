@@ -30,10 +30,7 @@ REDIS_HOST=redis
 REDIS_PORT=6379
 REDIS_DB=0
 
-# Neo4j (Update with your actual credentials)
-NEO4J_URI=https://neo4j.ft.tc
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=your-neo4j-password
+# Neo4j configuration removed - using brain service instead
 
 # 📊 Monitoring & Reliability (New with type safety improvements)
 ENABLE_TYPE_SAFETY_CHECKS=true

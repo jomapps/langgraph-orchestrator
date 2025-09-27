@@ -12,6 +12,8 @@ from ..models.workflow import WorkflowStatus, WorkflowState
 from ..models.task import TaskStatus
 from ..services import RedisStateManager
 from ..config import settings
+from ..clients.brain_client import BrainServiceClient
+from ..workflows.base_workflow import create_workflow
 
 logger = logging.getLogger(__name__)
 
@@ -26,28 +28,53 @@ class WorkflowOrchestrator:
         self.workflows: Dict[str, StateGraph] = {}
         self.memory_saver = MemorySaver()
         self._running_workflows: Dict[str, asyncio.Task] = {}
-        
+        self.brain_client = None
+        self._brain_workflows: Dict[str, object] = {}  # Store brain service workflows
+
+    async def initialize_brain_client(self):
+        """Initialize brain service client"""
+        if self.brain_client is None:
+            brain_service_url = getattr(settings, 'BRAIN_SERVICE_BASE_URL', 'https://brain.ft.tc')
+            self.brain_client = BrainServiceClient(brain_service_url)
+            await self.brain_client.connect()
+            logger.info("Brain service client initialized and connected")
+
     async def initialize_workflow(self, workflow: Workflow) -> StateGraph:
         """
         Initialize a new workflow graph based on workflow configuration.
+        Now supports both LangGraph and brain service workflows.
         """
-        logger.info(f"Initializing workflow {workflow.id} of type {workflow.type}")
-        
-        # Create workflow graph
+        logger.info(f"Initializing workflow {workflow.workflow_id} of type {workflow.workflow_type}")
+
+        # Initialize brain client if needed
+        await self.initialize_brain_client()
+
+        # Try to create brain service workflow first
+        try:
+            brain_workflow = await create_workflow(
+                workflow.workflow_type.value,
+                getattr(settings, 'BRAIN_SERVICE_BASE_URL', 'https://brain.ft.tc')
+            )
+            self._brain_workflows[workflow.workflow_id] = brain_workflow
+            logger.info(f"Created brain service workflow for {workflow.workflow_id}")
+        except Exception as e:
+            logger.warning(f"Failed to create brain service workflow, falling back to LangGraph: {str(e)}")
+
+        # Create traditional LangGraph workflow as fallback
         workflow_graph = StateGraph(ExecutionContext)
-        
+
         # Add nodes based on workflow type
-        if workflow.type.value == "video_creation":
+        if workflow.workflow_type.value == "movie_creation":
             await self._build_video_creation_workflow(workflow_graph, workflow)
-        elif workflow.type.value == "content_optimization":
+        elif workflow.workflow_type.value == "content_generation":
             await self._build_content_optimization_workflow(workflow_graph, workflow)
         else:
-            raise ValueError(f"Unsupported workflow type: {workflow.type}")
-        
+            raise ValueError(f"Unsupported workflow type: {workflow.workflow_type}")
+
         # Compile the graph
         compiled_graph = workflow_graph.compile(checkpointer=self.memory_saver)
-        self.workflows[workflow.id] = compiled_graph
-        
+        self.workflows[workflow.workflow_id] = compiled_graph
+
         return compiled_graph
     
     async def _build_video_creation_workflow(self, graph: StateGraph, workflow: Workflow):
@@ -524,16 +551,25 @@ class WorkflowOrchestrator:
     
     async def start_workflow(self, workflow: Workflow) -> str:
         """
-        Start a workflow execution.
+        Start a workflow execution with brain service integration.
         """
-        logger.info(f"Starting workflow {workflow.id}")
-        
+        logger.info(f"Starting workflow {workflow.workflow_id}")
+
         # Initialize workflow graph
         workflow_graph = await self.initialize_workflow(workflow)
-        
+
+        # Check if we have a brain service workflow
+        if workflow.workflow_id in self._brain_workflows:
+            logger.info(f"Using brain service workflow for {workflow.workflow_id}")
+            # Start brain service workflow execution in background
+            task = asyncio.create_task(self._execute_brain_workflow(workflow))
+            self._running_workflows[workflow.workflow_id] = task
+            return workflow.workflow_id
+
+        # Fallback to traditional LangGraph execution
         # Create execution context
         execution_context = ExecutionContext(
-            workflow_id=workflow.id,
+            workflow_id=workflow.workflow_id,
             project_id=workflow.project_id,
             current_state="initializing",
             previous_state="",
@@ -551,14 +587,60 @@ class WorkflowOrchestrator:
         
         # Update workflow status
         workflow.status = WorkflowStatus.RUNNING
-        workflow.state = WorkflowState.ACTIVE
+        workflow.current_state = WorkflowState.CONCEPT_DEVELOPMENT
         await self.state_manager.save_workflow(workflow)
-        
+
         # Start workflow execution in background
         task = asyncio.create_task(self._execute_workflow(workflow_graph, execution_context))
-        self._running_workflows[workflow.id] = task
-        
-        return workflow.id
+        self._running_workflows[workflow.workflow_id] = task
+
+        return workflow.workflow_id
+
+    async def _execute_brain_workflow(self, workflow: Workflow):
+        """
+        Execute workflow using brain service.
+        """
+        try:
+            logger.info(f"Executing brain service workflow {workflow.workflow_id}")
+
+            # Update workflow status
+            workflow.status = WorkflowStatus.RUNNING
+            workflow.current_state = WorkflowState.CONCEPT_DEVELOPMENT
+            await self.state_manager.save_workflow(workflow)
+
+            # Get brain service workflow
+            brain_workflow = self._brain_workflows[workflow.workflow_id]
+
+            # Execute the brain workflow
+            result = await brain_workflow.execute(workflow)
+
+            # Update workflow completion
+            await self._complete_brain_workflow(workflow.workflow_id, result)
+
+        except Exception as e:
+            logger.error(f"Brain workflow execution failed: {e}")
+            await self._fail_workflow(workflow.workflow_id, str(e))
+
+    async def _complete_brain_workflow(self, workflow_id: str, final_result: Dict[str, Any]):
+        """
+        Handle brain workflow completion.
+        """
+        logger.info(f"Brain workflow {workflow_id} completed successfully")
+
+        # Update workflow status
+        workflow = await self.state_manager.get_workflow(workflow_id)
+        if workflow:
+            workflow.status = WorkflowStatus.COMPLETED
+            workflow.current_state = WorkflowState.FINALIZATION
+            workflow.progress_percentage = 100.0
+            workflow.updated_at = datetime.utcnow()
+            await self.state_manager.save_workflow(workflow)
+
+        # Clean up running workflows
+        if workflow_id in self._running_workflows:
+            del self._running_workflows[workflow_id]
+        if workflow_id in self._brain_workflows:
+            del self._brain_workflows[workflow_id]
     
     async def _execute_workflow(self, workflow_graph: StateGraph, execution_context: ExecutionContext):
         """
@@ -751,6 +833,13 @@ class WorkflowOrchestrator:
             del self._running_workflows[workflow_id]
         
         logger.info(f"Cleaned up {len(completed_workflows)} completed workflows")
+
+    async def cleanup_brain_service(self):
+        """Clean up brain service connections"""
+        if self.brain_client:
+            await self.brain_client.disconnect()
+            self.brain_client = None
+            logger.info("Brain service connections cleaned up")
 
 # Global orchestrator instance
 orchestrator = None
