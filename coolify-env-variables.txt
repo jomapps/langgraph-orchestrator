@@ -1,0 +1,41 @@
+# Environment Variables for Coolify Setup
+# Copy each variable individually to Coolify dashboard
+
+# 🔐 Security & Core (Mark as SECRET in Coolify)
+SECRET_KEY=YourGeneratedSecretKey32CharsLong
+API_KEY=your-generated-uuid-here
+ENVIRONMENT=production
+DEBUG=false
+
+# 🔧 Application Settings
+API_HOST=0.0.0.0
+API_PORT=8003
+LOG_LEVEL=INFO
+LOG_FORMAT=pretty
+ENABLE_PERFORMANCE_LOGGING=true
+ENABLE_STRUCTURED_LOGGING=false
+
+# ⚡ Performance Settings
+MAX_WORKFLOWS=50
+MAX_AGENTS=10
+WORKER_PROCESSES=4
+
+# 🔗 External Services (Update URLs as needed)
+AUTO_MOVIE_BASE_URL=https://auto-movie.ft.tc
+BRAIN_SERVICE_BASE_URL=https://brain.ft.tc
+TASK_SERVICE_BASE_URL=https://tasks.ft.tc
+
+# 💾 Database Configuration
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_DB=0
+
+# Neo4j (Update with your actual credentials)
+NEO4J_URI=https://neo4j.ft.tc
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=your-neo4j-password
+
+# 📊 Monitoring & Reliability (New with type safety improvements)
+ENABLE_TYPE_SAFETY_CHECKS=true
+REDIS_CONNECTION_TIMEOUT=5
+REDIS_MAX_CONNECTIONS=50
