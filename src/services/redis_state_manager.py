@@ -44,7 +44,7 @@ class RedisStateManager:
             )
             
             # Test connection
-            await client.ping()
+            await self.redis_client.ping()
             self.is_connected = True
             logger.info("Connected to Redis successfully")
             
@@ -55,7 +55,7 @@ class RedisStateManager:
     async def disconnect(self) -> None:
         """Disconnect from Redis."""
         if self.redis_client:
-            await client.close()
+            await self.redis_client.close()
             self.is_connected = False
             logger.info("Disconnected from Redis")
     
