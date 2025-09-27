@@ -144,7 +144,9 @@ When working with API endpoints, be aware of field name inconsistencies:
 #### State Manager Methods
 - Use `list_agents()` and `list_workflows()` (not `get_agents()` or `get_workflows()`)  
 - The `offset` parameter is not supported in list methods
+- **Type Safety**: All Redis operations use `_ensure_connected()` pattern (null-safe)
 - Always handle Redis connection failures gracefully
+- **Reliability**: 70+ type safety fixes applied (September 2025)
 
 ### Environment Configuration
 

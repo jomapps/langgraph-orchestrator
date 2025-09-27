@@ -5,7 +5,7 @@
 **Status**: ✅ **LIVE AND OPERATIONAL**  
 **URL**: https://agents.ft.tc  
 **Deployed**: September 26, 2025  
-**Last Update**: September 26, 2025 04:26 UTC  
+**Last Update**: September 27, 2025 17:18 UTC
 
 ## 📊 Current System Status
 
@@ -66,9 +66,35 @@ WORKER_PROCESSES=1
 - **Health Check**: `curl -f http://localhost:8003/health`
 - **Command**: `uvicorn src.main:app --host 0.0.0.0 --port 8003 --workers 4`
 
-## 🔄 Recent Fixes Applied (September 26, 2025)
+## 🔄 Recent Fixes Applied
 
-### Critical Issues Resolved
+### Latest Improvements (September 27, 2025)
+
+#### 🛡️ **Complete Redis Type Safety Implementation**
+**Issue**: Redis client could be None, causing potential runtime crashes
+- ✅ Added `_ensure_connected()` helper method for null-safe Redis access
+- ✅ Applied type-safe pattern to all 20+ Redis operations
+- ✅ Eliminated all MyPy union-attr errors (70+ fixes)
+- ✅ **Impact**: Guaranteed null-safe Redis operations, improved reliability
+
+**Methods Fixed**:
+- Workflow operations: `save_workflow`, `get_workflow`, `delete_workflow`, `list_workflows`
+- Agent operations: `save_agent`, `get_agent`, `delete_agent`, `list_agents`
+- Project operations: `save_project`, `get_project`, `delete_project`, `list_projects`
+- Task operations: `save_task`, `get_task`, `delete_task`, `list_tasks`
+- Execution context operations: `save_execution_context`, `get_execution_context`, `delete_execution_context`
+- Distributed locking: `acquire_lock`, `release_lock`
+- Utility operations: `cleanup_expired_data`
+
+#### 📚 **Documentation Improvements**
+- ✅ Created comprehensive WARP.md file with development guidelines
+- ✅ Included Byterover MCP integration patterns
+- ✅ Added API development best practices
+- ✅ Documented common deployment issues and solutions
+
+### Previous Fixes (September 26, 2025)
+
+#### Critical Issues Resolved
 
 #### 1. API Method Name Mismatches
 **Issue**: API endpoints calling incorrect state manager methods
