@@ -18,6 +18,12 @@ class RedisStateManager:
         self.redis_client: Optional[redis.Redis] = None
         self.is_connected = False
     
+    def _ensure_connected(self) -> redis.Redis:
+        """Ensure Redis client is connected and return it."""
+        if not self.is_connected or self.redis_client is None:
+            raise RuntimeError("Redis not connected")
+        return self.redis_client
+    
     @classmethod
     async def create(cls) -> 'RedisStateManager':
         """Create and initialize RedisStateManager"""
@@ -55,31 +61,29 @@ class RedisStateManager:
     
     async def save_workflow(self, workflow: Workflow) -> bool:
         """Save workflow to Redis."""
-        if not self.is_connected:
-            raise RuntimeError("Redis not connected")
-        
         try:
+            client = self._ensure_connected()
             key = f"workflow:{workflow.workflow_id}"
             workflow_data = workflow.model_dump_json()
             
             # Save workflow data
-            await self.redis_client.set(key, workflow_data)
+            await client.set(key, workflow_data)
             
             # Add to project index
             project_key = f"project:{workflow.project_id}:workflows"
-            await self.redis_client.sadd(project_key, workflow.workflow_id)
+            await client.sadd(project_key, workflow.workflow_id)
             
             # Add to status index
             status_key = f"workflows:status:{workflow.status}"
-            await self.redis_client.sadd(status_key, workflow.workflow_id)
+            await client.sadd(status_key, workflow.workflow_id)
             
             # Add to type index
             type_key = f"workflows:type:{workflow.workflow_type}"
-            await self.redis_client.sadd(type_key, workflow.workflow_id)
+            await client.sadd(type_key, workflow.workflow_id)
             
             # Set expiration for status indices (24 hours)
-            await self.redis_client.expire(status_key, 86400)
-            await self.redis_client.expire(type_key, 86400)
+            await client.expire(status_key, 86400)
+            await client.expire(type_key, 86400)
             
             logger.debug(f"Saved workflow {workflow.workflow_id}")
             return True
@@ -90,12 +94,10 @@ class RedisStateManager:
     
     async def get_workflow(self, workflow_id: str) -> Optional[Workflow]:
         """Get workflow from Redis."""
-        if not self.is_connected:
-            raise RuntimeError("Redis not connected")
-        
         try:
+            client = self._ensure_connected()
             key = f"workflow:{workflow_id}"
-            workflow_data = await self.redis_client.get(key)
+            workflow_data = await client.get(key)
             
             if not workflow_data:
                 return None
@@ -108,28 +110,26 @@ class RedisStateManager:
     
     async def delete_workflow(self, workflow_id: str) -> bool:
         """Delete workflow from Redis."""
-        if not self.is_connected:
-            raise RuntimeError("Redis not connected")
-        
         try:
+            client = self._ensure_connected()
             workflow = await self.get_workflow(workflow_id)
             if not workflow:
                 return False
             
             key = f"workflow:{workflow_id}"
-            await self.redis_client.delete(key)
+            await client.delete(key)
             
             # Remove from project index
             project_key = f"project:{workflow.project_id}:workflows"
-            await self.redis_client.srem(project_key, workflow_id)
+            await client.srem(project_key, workflow_id)
             
             # Remove from status index
             status_key = f"workflows:status:{workflow.status}"
-            await self.redis_client.srem(status_key, workflow_id)
+            await client.srem(status_key, workflow_id)
             
             # Remove from type index
             type_key = f"workflows:type:{workflow.workflow_type}"
-            await self.redis_client.srem(type_key, workflow_id)
+            await client.srem(type_key, workflow_id)
             
             logger.debug(f"Deleted workflow {workflow_id}")
             return True
@@ -143,21 +143,19 @@ class RedisStateManager:
                            workflow_type: Optional[str] = None,
                            limit: int = 100) -> List[Workflow]:
         """List workflows with optional filters."""
-        if not self.is_connected:
-            raise RuntimeError("Redis not connected")
-        
         try:
+            client = self._ensure_connected()
             workflow_ids = set()
             
             # Get workflow IDs based on filters
             if project_id:
                 project_key = f"project:{project_id}:workflows"
-                project_workflows = await self.redis_client.smembers(project_key)
+                project_workflows = await client.smembers(project_key)
                 workflow_ids.update(project_workflows)
             
             if status:
                 status_key = f"workflows:status:{status}"
-                status_workflows = await self.redis_client.smembers(status_key)
+                status_workflows = await client.smembers(status_key)
                 if workflow_ids:
                     workflow_ids.intersection_update(status_workflows)
                 else:
@@ -165,7 +163,7 @@ class RedisStateManager:
             
             if workflow_type:
                 type_key = f"workflows:type:{workflow_type}"
-                type_workflows = await self.redis_client.smembers(type_key)
+                type_workflows = await client.smembers(type_key)
                 if workflow_ids:
                     workflow_ids.intersection_update(type_workflows)
                 else:
@@ -175,7 +173,7 @@ class RedisStateManager:
             if not workflow_ids:
                 cursor = 0
                 while True:
-                    cursor, keys = await self.redis_client.scan(cursor, match="workflow:*", count=100)
+                    cursor, keys = await client.scan(cursor, match="workflow:*", count=100)
                     for key in keys:
                         workflow_id = key.replace("workflow:", "")
                         workflow_ids.add(workflow_id)
