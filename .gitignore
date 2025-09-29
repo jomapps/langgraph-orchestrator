@@ -1,4 +1,11 @@
 
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# AI Rules
 .clinerules/byterover-rules.md
 .kilocode/rules/byterover-rules.md
 .roo/rules/byterover-rules.md
